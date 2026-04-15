@@ -1,6 +1,6 @@
 {
   "name": "@sangwonl/pocato-react",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "author": "Sangwon Lee <gamzabaw@gmail.com>",
   "license": "MIT",
   "repository": {
@@ -25,7 +25,7 @@
     "dev": "tsup --watch"
   },
   "dependencies": {
-    "@sangwonl/pocato-core": "0.1.0"
+    "@sangwonl/pocato-core": "0.2.0"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
