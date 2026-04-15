@@ -4,20 +4,25 @@ import vertexShader from '../shaders/common.vert'
 import fragShaderGlare from '../shaders/glare.frag'
 import fragShaderGlare3d from '../shaders/glare-3d.frag'
 import fragShaderSnowfall from '../shaders/snowfall.frag'
+import fragShaderSnowfall3d from '../shaders/snowfall-3d.frag'
 import fragShaderBrush from '../shaders/brush.frag'
+import fragShaderBrush3d from '../shaders/brush-3d.frag'
 import fragShaderBlur from '../shaders/blur.frag'
-import type { PocaCardType } from '../types'
+import fragShaderBlur3d from '../shaders/blur-3d.frag'
 
-const FRAG_SHADERS: Record<PocaCardType, string> = {
+const FRAG_SHADERS: Record<string, string> = {
   'glare': fragShaderGlare,
   'glare-3d': fragShaderGlare3d,
   'snowfall': fragShaderSnowfall,
+  'snowfall-3d': fragShaderSnowfall3d,
   'brush': fragShaderBrush,
+  'brush-3d': fragShaderBrush3d,
   'blur': fragShaderBlur,
+  'blur-3d': fragShaderBlur3d,
 }
 
 export interface RendererOptions {
-  type: PocaCardType
+  type: string
   baseImage: string
   popupImage?: string
   maskImage?: string

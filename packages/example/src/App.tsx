@@ -1,7 +1,16 @@
 import { useRef } from 'react'
 import { PocaCard, type PocaCardHandle } from '@pineple/pocato-react'
 
-const CARD_TYPES = ['glare', 'glare-3d', 'snowfall', 'brush', 'blur'] as const
+const CARD_TYPES = [
+  'glare',
+  'glare-3d',
+  'snowfall',
+  'snowfall-3d',
+  'brush',
+  'brush-3d',
+  'blur',
+  'blur-3d'
+] as const
 
 function CardDemo({ type }: { type: typeof CARD_TYPES[number] }) {
   const cardRef = useRef<PocaCardHandle>(null)

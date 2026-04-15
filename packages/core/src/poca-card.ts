@@ -2,10 +2,8 @@ import { EventEmitter } from './event-emitter'
 import { Renderer, type RendererOptions } from './renderer'
 import { InteractionHandler } from './interaction'
 import { wiggle, type WiggleController } from './animation/wiggle'
-import type { PocaCardType } from './types'
-
 export interface PocaCardOptions {
-  type: PocaCardType
+  type: string
   baseImage: string
   popupImage?: string
   maskImage?: string
