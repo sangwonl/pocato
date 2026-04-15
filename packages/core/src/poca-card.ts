@@ -70,15 +70,17 @@ export class PocaCard extends EventEmitter {
   wiggle(): void {
     this.wiggleController?.stop()
 
-    // Match Angular: startInteraction(0,0,false) then feed wiggle positions
+    // Match Angular: startInteraction(0,0,false) then feed raw pixel coords
+    // DefaultWiggler(0, 0, 100) — center at origin, radius 100px
     this.interaction.startSyntheticInteraction()
 
-    this.wiggleController = wiggle(50, 50, 15, (pos, done) => {
+    this.wiggleController = wiggle(0, 0, 100, (pos, done) => {
       if (done) {
         this.interaction.simulateEndInteract()
         this.wiggleController = null
       } else {
-        this.interaction.simulateInteract(pos.x, pos.y)
+        // Feed wiggle position directly as clientX/Y (origin is 0,0)
+        this.interaction.simulateInteractRaw(pos.x, pos.y)
       }
     })
   }

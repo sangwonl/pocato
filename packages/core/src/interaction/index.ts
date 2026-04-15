@@ -230,27 +230,21 @@ export class InteractionHandler {
   }
 
   /**
-   * Wiggle support: start a synthetic interaction, then feed positions.
-   * Matches Angular: startInteraction(0,0,false) then doInteract({x,y})
+   * Wiggle support: start a synthetic interaction.
+   * Matches Angular: startInteraction(0, 0, false)
+   * Sets origin at (0,0) so wiggle coordinates become deltas directly.
    */
   startSyntheticInteraction(): void {
     const rect = this.container.getBoundingClientRect()
     this.boundingRect = { left: rect.left, top: rect.top, width: rect.width, height: rect.height }
-    // Origin at (0,0) so that delta == clientXY
     this.interactionOrigin = { x: 0, y: 0 }
   }
 
   /**
-   * Feed wiggle position as clientX/Y coordinates.
-   * x,y are percentage (0-100) of the card area.
+   * Feed raw clientX/Y directly to doInteract.
+   * Used by wiggle where coordinates come from DefaultWiggler(0,0,100).
    */
-  simulateInteract(x: number, y: number): void {
-    const rect = this.boundingRect
-    // Convert percentage to clientX/Y
-    const clientX = rect.left + (x / 100) * rect.width
-    const clientY = rect.top + (y / 100) * rect.height
-    // Set origin so delta-based center offset works correctly
-    this.interactionOrigin = { x: clientX, y: clientY }
+  simulateInteractRaw(clientX: number, clientY: number): void {
     this.doInteract(clientX, clientY)
   }
 
