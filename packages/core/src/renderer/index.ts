@@ -34,7 +34,10 @@ export class Renderer {
   private rafId: number | null = null
   private textures: THREE.Texture[] = []
   private canvas: HTMLCanvasElement
+  private cardEl: HTMLDivElement
+  private rotatorEl: HTMLDivElement
   private resizeObserver: ResizeObserver | null = null
+  private styleEl: HTMLStyleElement | null = null
 
   constructor(
     private container: HTMLElement,
@@ -42,14 +45,58 @@ export class Renderer {
     private onError?: (error: Error) => void,
     private onReady?: () => void,
   ) {
+    this.injectStyles()
+
+    // Build DOM: container > .pocato-card > .pocato-rotator > canvas
+    this.cardEl = document.createElement('div')
+    this.cardEl.className = 'pocato-card'
+
+    this.rotatorEl = document.createElement('div')
+    this.rotatorEl.className = 'pocato-rotator'
+
     this.canvas = document.createElement('canvas')
-    this.canvas.style.width = '100%'
-    this.canvas.style.height = '100%'
-    this.canvas.style.display = 'block'
-    this.container.appendChild(this.canvas)
+    this.canvas.className = 'pocato-canvas'
+
+    this.rotatorEl.appendChild(this.canvas)
+    this.cardEl.appendChild(this.rotatorEl)
+    this.container.appendChild(this.cardEl)
 
     bootstrapShaders()
     this.init()
+  }
+
+  private injectStyles(): void {
+    const id = 'pocato-styles'
+    if (document.getElementById(id)) return
+
+    this.styleEl = document.createElement('style')
+    this.styleEl.id = id
+    this.styleEl.textContent = `
+      .pocato-card {
+        width: 100%;
+        height: 100%;
+        perspective: 1000px;
+        touch-action: none;
+        user-select: none;
+      }
+      .pocato-rotator {
+        width: 100%;
+        height: 100%;
+        transform-style: preserve-3d;
+        transform-origin: center;
+        transform: rotateY(var(--pocato-rotate-x, 0deg)) rotateX(var(--pocato-rotate-y, 0deg));
+        border-radius: 2%;
+        overflow: hidden;
+        will-change: transform;
+      }
+      .pocato-canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        border-radius: 2%;
+      }
+    `
+    document.head.appendChild(this.styleEl)
   }
 
   private init(): void {
@@ -164,11 +211,16 @@ export class Renderer {
   }): void {
     if (!this.material) return
     const u = this.material.uniforms
-    // Convert degrees to radians for shader consumption (matching Angular source)
-    if (updates.rotate) u.uRotate.value.set(
-      updates.rotate.x * (Math.PI / 180),
-      updates.rotate.y * (Math.PI / 180),
-    )
+    if (updates.rotate) {
+      // CSS transform for 3D card tilt (degrees)
+      this.rotatorEl.style.setProperty('--pocato-rotate-x', `${updates.rotate.x}deg`)
+      this.rotatorEl.style.setProperty('--pocato-rotate-y', `${updates.rotate.y}deg`)
+      // Shader uniform (radians)
+      u.uRotate.value.set(
+        updates.rotate.x * (Math.PI / 180),
+        updates.rotate.y * (Math.PI / 180),
+      )
+    }
     if (updates.mouse) u.uMouse.value.set(updates.mouse.x, updates.mouse.y)
     if (updates.move) u.uMove.value.set(updates.move.x, updates.move.y)
     if (updates.opacity !== undefined) u.uCardOpacity.value = updates.opacity
@@ -200,6 +252,11 @@ export class Renderer {
     return this.container.getBoundingClientRect()
   }
 
+  /** Returns the rotator element (used for pointer event binding) */
+  getRotatorEl(): HTMLDivElement {
+    return this.rotatorEl
+  }
+
   destroy(): void {
     if (this.rafId !== null) cancelAnimationFrame(this.rafId)
     this.resizeObserver?.disconnect()
@@ -207,8 +264,8 @@ export class Renderer {
     this.mesh?.geometry.dispose()
     this.material?.dispose()
     this.webglRenderer?.dispose()
-    if (this.canvas.parentNode) {
-      this.canvas.parentNode.removeChild(this.canvas)
+    if (this.cardEl.parentNode) {
+      this.cardEl.parentNode.removeChild(this.cardEl)
     }
     this.scene = null
     this.camera = null

@@ -36,8 +36,9 @@ export class PocaCard extends EventEmitter {
       () => this.emit('ready'),
     )
 
+    // Bind pointer events on the rotator element (inside the perspective container)
     this.interaction = new InteractionHandler(
-      container,
+      this.renderer.getRotatorEl(),
       {
         onRotate: (rotate) => this.renderer.updateUniforms({ rotate }),
         onGlare: (_glare) => {
