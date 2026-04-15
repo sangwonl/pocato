@@ -61,11 +61,9 @@ export class PocaCard extends EventEmitter {
 
   wiggle(): void {
     this.wiggleController?.stop()
-    const rect = this.renderer.getContainerRect()
-    this.interaction.updateRect({
-      x: rect.x, y: rect.y,
-      width: rect.width, height: rect.height,
-    })
+
+    // Match Angular: startInteraction(0,0,false) then feed wiggle positions
+    this.interaction.startSyntheticInteraction()
 
     this.wiggleController = wiggle(50, 50, 15, (pos, done) => {
       if (done) {

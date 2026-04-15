@@ -11,8 +11,8 @@ export interface InteractionCallbacks {
 }
 
 interface Rect {
-  x: number
-  y: number
+  left: number
+  top: number
   width: number
   height: number
 }
@@ -25,7 +25,7 @@ const DBLCLICK_MS = 200
 export class InteractionHandler {
   private flipped = false
   private interacting = false
-  private boundingRect: Rect = { x: 0, y: 0, width: 0, height: 0 }
+  private boundingRect: Rect = { left: 0, top: 0, width: 0, height: 0 }
   private interactionOrigin = { x: 0, y: 0 }
 
   private springRotate: Spring<{ x: number; y: number }>
@@ -36,7 +36,6 @@ export class InteractionHandler {
   private dblClickTimer: ReturnType<typeof setTimeout> | null = null
   private activePointerId: number | null = null
 
-  // Bound event handlers for cleanup
   private boundPointerDown: (e: PointerEvent) => void
   private boundPointerMove: (e: PointerEvent) => void
   private boundPointerUp: (e: PointerEvent) => void
@@ -51,12 +50,10 @@ export class InteractionHandler {
   ) {
     this.flipped = initialFlipped
 
+    // Spring rotate onChange: apply flip-aware sign to CSS rotation
+    // Angular: { x: flipped ? 180 - v.x : -v.x, y: flipped ? -v.y : v.y }
     this.springRotate = springVec2({ x: 0, y: 0 }, (v) => {
-      // Account for flip state: mirror rotation when flipped
-      const rotateForCSS = this.flipped
-        ? { x: 180 - v.x, y: -v.y }
-        : { x: -v.x, y: v.y }
-      callbacks.onRotate(rotateForCSS)
+      callbacks.onRotate(v)
       callbacks.onDistFromCenter(clamp(distance(v.x, v.y, 0, 0) / 50, 0, 1))
     }, SPRING_INTERACT)
 
@@ -64,7 +61,6 @@ export class InteractionHandler {
       callbacks.onGlare(v)
     }, SPRING_INTERACT)
 
-    // Bind handlers
     this.boundPointerDown = this.onPointerDown.bind(this)
     this.boundPointerMove = this.onPointerMove.bind(this)
     this.boundPointerUp = this.onPointerUp.bind(this)
@@ -76,7 +72,6 @@ export class InteractionHandler {
     this.container.addEventListener('pointerup', this.boundPointerUp)
     this.container.addEventListener('pointercancel', this.boundPointerUp)
     this.container.addEventListener('click', this.boundClick)
-    // Prevent parent scroll interference on mobile
     this.container.addEventListener('touchstart', this.boundTouchHandler, { passive: true })
     this.container.addEventListener('touchmove', this.boundTouchHandler, { passive: true })
   }
@@ -90,12 +85,10 @@ export class InteractionHandler {
     e.stopPropagation()
     this.interacting = true
     this.activePointerId = e.pointerId
-
-    // Capture pointer so events continue even when pointer leaves the element
     this.container.setPointerCapture(e.pointerId)
 
     const rect = this.container.getBoundingClientRect()
-    this.boundingRect = { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+    this.boundingRect = { left: rect.left, top: rect.top, width: rect.width, height: rect.height }
     this.interactionOrigin = { x: e.clientX, y: e.clientY }
     this.doInteract(e.clientX, e.clientY)
   }
@@ -108,25 +101,20 @@ export class InteractionHandler {
     this.doInteract(e.clientX, e.clientY)
   }
 
-  private onPointerUp(e: PointerEvent): void {
+  private onPointerUp(_e: PointerEvent): void {
     if (!this.interacting) return
     this.interacting = false
-
-    // Release pointer capture
     if (this.activePointerId !== null) {
       try { this.container.releasePointerCapture(this.activePointerId) } catch {}
       this.activePointerId = null
     }
-
     this.endInteract()
   }
 
   private onClick(_e: MouseEvent): void {
     if (!this.flippable) return
-
     this.clickCount++
     if (this.dblClickTimer) clearTimeout(this.dblClickTimer)
-
     this.dblClickTimer = setTimeout(() => {
       if (this.clickCount >= 2) {
         this.flip()
@@ -135,85 +123,131 @@ export class InteractionHandler {
     }, DBLCLICK_MS)
   }
 
+  /**
+   * Core interaction math — faithfully ported from Angular move.service.ts doInteract()
+   */
   private doInteract(clientX: number, clientY: number): void {
     const rect = this.boundingRect
     if (rect.width === 0 || rect.height === 0) return
 
-    // Delta from interaction origin (matching Angular: delta-based, not absolute)
     const deltaX = clientX - this.interactionOrigin.x
     const deltaY = clientY - this.interactionOrigin.y
 
-    // Touch position from center of card + delta
-    const touchPosFromCenterX = rect.width / 2 + deltaX
-    const touchPosFromCenterY = rect.height / 2 + deltaY
+    // touchPosFromLT: absolute position within card (for glare)
+    const touchPosFromLT = {
+      x: clientX - rect.left,
+      y: clientY - rect.top,
+    }
+    const touchPercentFromLT = {
+      x: clamp(round((100 / rect.width) * touchPosFromLT.x)),
+      y: clamp(round((100 / rect.height) * touchPosFromLT.y)),
+    }
 
-    // Convert to percentage (0-100)
-    const pctFromCenterX = clamp(round((100 / rect.width) * touchPosFromCenterX))
-    const pctFromCenterY = clamp(round((100 / rect.height) * touchPosFromCenterY))
+    // touchPosFromCenter: delta-based center offset (for rotation)
+    const touchPosFromCenter = {
+      x: rect.width / 2 + deltaX,
+      y: rect.height / 2 + deltaY,
+    }
+    const touchPercentFromCenter = {
+      x: clamp(round((100 / rect.width) * touchPosFromCenter.x)),
+      y: clamp(round((100 / rect.height) * touchPosFromCenter.y)),
+    }
+    const touchPercentBasedCenter = {
+      x: touchPercentFromCenter.x - 50,
+      y: touchPercentFromCenter.y - 50,
+    }
 
-    // From center base (-50 to 50)
-    const basedCenterX = pctFromCenterX - 50
-    const basedCenterY = pctFromCenterY - 50
+    // moveDelta: raw pixel delta (no DPR)
+    this.callbacks.onMoveDelta({ x: deltaX, y: deltaY })
 
-    // Rotation (matching Angular axis mapping: x→rotateX, y→rotateY)
-    const rotateX = round(basedCenterX / 3.5)
-    const rotateY = round(basedCenterY / 2)
-
-    // Glare position (inverted)
-    const glareX = adjust(pctFromCenterX, 0, 100, 100, 0)
-    const glareY = adjust(pctFromCenterY, 0, 100, 100, 0)
-
-    // Movement delta (no DPR scaling, matching Angular)
-    this.callbacks.onMoveDelta({ x: round(deltaX), y: round(deltaY) })
-
-    // Mouse position in pixels with DPR (matching Angular for shader uMouse)
+    // mousePos: absolute position in card, DPR-scaled, Y-flipped for WebGL
     const dpr = window.devicePixelRatio || 1
-    const mouseX = (clientX - rect.x) * dpr
-    const mouseY = (rect.height - (clientY - rect.y)) * dpr  // Y-flipped for WebGL
-    this.callbacks.onMousePos({ x: round(mouseX), y: round(mouseY) })
+    this.callbacks.onMousePos({
+      x: (clientX - rect.left) * dpr,
+      y: (rect.height - (clientY - rect.top)) * dpr,
+    })
 
-    this.springRotate.set({ x: rotateX, y: rotateY })
-    this.springGlare.set({ x: glareX, y: glareY, o: 1 })
+    // Rotation: basedCenter / divisor
+    const rotate = {
+      x: round(touchPercentBasedCenter.x / 3.5),
+      y: round(touchPercentBasedCenter.y / 2),
+    }
+
+    // Glare: absolute percentage from left-top
+    const glare = {
+      x: round(touchPercentFromLT.x),
+      y: round(touchPercentFromLT.y),
+      o: 1 as number,
+    }
+
+    this.updateSprings(glare, rotate)
+  }
+
+  /**
+   * Apply spring targets with flip-aware rotation sign.
+   * Angular: { x: flipped ? 180 - rotate.x : -rotate.x, y: flipped ? -rotate.y : rotate.y }
+   */
+  private updateSprings(
+    glare: { x: number; y: number; o: number },
+    rotate: { x: number; y: number },
+  ): void {
+    this.springGlare.stiffness = SPRING_INTERACT.stiffness
+    this.springGlare.damping = SPRING_INTERACT.damping
+    this.springGlare.set(glare)
+
+    this.springRotate.stiffness = SPRING_INTERACT.stiffness
+    this.springRotate.damping = SPRING_INTERACT.damping
+    this.springRotate.set({
+      x: this.flipped ? 180 - rotate.x : -rotate.x,
+      y: this.flipped ? -rotate.y : rotate.y,
+    })
   }
 
   private endInteract(): void {
-    this.springRotate.set({ x: 0, y: 0 })
+    this.springRotate.set({ x: this.flipped ? 180 : 0, y: 0 })
     this.springGlare.set({ x: 50, y: 50, o: 0 })
     this.callbacks.onMoveDelta({ x: 0, y: 0 })
 
-    // Reset mouse to center (matching Angular default)
     const rect = this.boundingRect
     const dpr = window.devicePixelRatio || 1
     this.callbacks.onMousePos({
-      x: round((rect.width / 2) * dpr),
-      y: round((rect.height / 2) * dpr),
+      x: (rect.width / 2) * dpr,
+      y: (rect.height / 2) * dpr,
     })
   }
 
   flip(flipped?: boolean): boolean {
     this.flipped = flipped ?? !this.flipped
-
-    // Swap spring params for smoother flip
     this.springRotate.stiffness = SPRING_FLIP.stiffness
     this.springRotate.damping = SPRING_FLIP.damping
-
-    const targetX = this.flipped ? 180 : 0
-    this.springRotate.set({ x: targetX, y: 0 }).then(() => {
-      // Restore interaction spring params
-      this.springRotate.stiffness = SPRING_INTERACT.stiffness
-      this.springRotate.damping = SPRING_INTERACT.damping
-    })
-
+    this.springRotate.set({ x: this.flipped ? 180 : 0, y: 0 })
     this.callbacks.onFlip(this.flipped)
     return this.flipped
   }
 
-  // Called externally by wiggle animation
+  /**
+   * Wiggle support: start a synthetic interaction, then feed positions.
+   * Matches Angular: startInteraction(0,0,false) then doInteract({x,y})
+   */
+  startSyntheticInteraction(): void {
+    const rect = this.container.getBoundingClientRect()
+    this.boundingRect = { left: rect.left, top: rect.top, width: rect.width, height: rect.height }
+    // Origin at (0,0) so that delta == clientXY
+    this.interactionOrigin = { x: 0, y: 0 }
+  }
+
+  /**
+   * Feed wiggle position as clientX/Y coordinates.
+   * x,y are percentage (0-100) of the card area.
+   */
   simulateInteract(x: number, y: number): void {
-    this.doInteract(
-      this.boundingRect.x + (x / 100) * this.boundingRect.width,
-      this.boundingRect.y + (y / 100) * this.boundingRect.height,
-    )
+    const rect = this.boundingRect
+    // Convert percentage to clientX/Y
+    const clientX = rect.left + (x / 100) * rect.width
+    const clientY = rect.top + (y / 100) * rect.height
+    // Set origin so delta-based center offset works correctly
+    this.interactionOrigin = { x: clientX, y: clientY }
+    this.doInteract(clientX, clientY)
   }
 
   simulateEndInteract(): void {
