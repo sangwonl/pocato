@@ -1,6 +1,8 @@
 import { useRef } from 'react'
 import { PocaCard, type PocaCardHandle } from '@sangwonl/pocato-react'
 
+const BASE = import.meta.env.BASE_URL
+
 const CARD_TYPES = [
   'glare',
   'glare-3d',
@@ -21,8 +23,8 @@ function CardDemo({ type }: { type: typeof CARD_TYPES[number] }) {
       <PocaCard
         ref={cardRef}
         type={type}
-        baseImage="/images/sample-base.webp"
-        popupImage="/images/sample-popup.webp"
+        baseImage={`${BASE}images/sample-base.webp`}
+        popupImage={`${BASE}images/sample-popup.webp`}
         flippable
         onFlip={(f) => console.log(`${type} flipped:`, f)}
         onReady={() => console.log(`${type} ready`)}
