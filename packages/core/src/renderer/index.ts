@@ -87,7 +87,11 @@ export class Renderer {
         transform: rotateY(var(--pocato-rotate-x, 0deg)) rotateX(var(--pocato-rotate-y, 0deg));
         border-radius: 2%;
         overflow: hidden;
-        will-change: transform;
+        will-change: transform, box-shadow;
+        transition: box-shadow 0.4s ease;
+        box-shadow:
+          0px 10px 20px -5px rgba(0,0,0,0.4),
+          0 2px 15px -5px rgba(0,0,0,0.3);
       }
       .pocato-canvas {
         width: 100%;
