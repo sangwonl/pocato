@@ -14,7 +14,7 @@ const CARD_TYPES = [
   'blur-3d'
 ] as const
 
-function CardDemo({ type, index }: { type: typeof CARD_TYPES[number]; index: number }) {
+function CardDemo({ type, index, flipSpeed }: { type: typeof CARD_TYPES[number]; index: number; flipSpeed?: number }) {
   const cardRef = useRef<PocaCardHandle>(null)
 
   useEffect(() => {
@@ -27,13 +27,14 @@ function CardDemo({ type, index }: { type: typeof CARD_TYPES[number]; index: num
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-      <h3>{type}</h3>
+      <h3>{type}{flipSpeed != null ? ` (x${flipSpeed})` : ''}</h3>
       <PocaCard
         ref={cardRef}
         type={type}
         baseImage={`${BASE}images/sample-base.webp`}
         popupImage={`${BASE}images/sample-popup.webp`}
         flippable
+        flipSpeed={flipSpeed}
         onFlip={(f) => console.log(`${type} flipped:`, f)}
         onReady={() => console.log(`${type} ready`)}
         style={{ width: 250, height: 350 }}
@@ -53,7 +54,7 @@ export function App() {
       <h1>Pocato Card Gallery</h1>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 32, marginTop: 24 }}>
         {CARD_TYPES.map((type, i) => (
-          <CardDemo key={type} type={type} index={i} />
+          <CardDemo key={type} type={type} index={i} flipSpeed={i === 0 ? 0.2 : i === 1 ? 1 : i === 2 ? 5 : undefined} />
         ))}
       </div>
     </div>

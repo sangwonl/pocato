@@ -1,5 +1,5 @@
-import { round, clamp, adjust, distance } from '../utils/math'
-import { springVec2, springVec3, type Spring } from '../animation/spring'
+import { springVec2, springVec3, type Spring } from '../animation/spring';
+import { clamp, distance, round } from '../utils/math';
 
 export interface InteractionCallbacks {
   onRotate: (rotate: { x: number; y: number }) => void
@@ -41,6 +41,8 @@ export class InteractionHandler {
   private boundPointerUp: (e: PointerEvent) => void
   private boundClick: (e: MouseEvent) => void
   private boundTouchHandler: (e: TouchEvent) => void
+
+  private _flipSpeed = 1
 
   constructor(
     private container: HTMLElement,
@@ -216,15 +218,21 @@ export class InteractionHandler {
     })
   }
 
+  set flipSpeed(speed: number) {
+    this._flipSpeed = speed
+  }
+
   flip(flipped?: boolean): boolean {
     this.flipped = flipped ?? !this.flipped
-    this.springRotate.stiffness = SPRING_FLIP.stiffness
+    const targetX = this.flipped ? 180 : 0
+
+    this.springRotate.stiffness = SPRING_FLIP.stiffness * this._flipSpeed
     this.springRotate.damping = SPRING_FLIP.damping
-    this.springRotate.set({ x: this.flipped ? 180 : 0, y: 0 }).then(() => {
-      // Restore interaction spring params after flip animation settles
+    this.springRotate.set({ x: targetX, y: 0 }).then(() => {
       this.springRotate.stiffness = SPRING_INTERACT.stiffness
       this.springRotate.damping = SPRING_INTERACT.damping
     })
+
     this.callbacks.onFlip(this.flipped)
     return this.flipped
   }

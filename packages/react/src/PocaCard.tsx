@@ -24,6 +24,7 @@ export interface PocaCardProps {
   backImage?: string
   flippable?: boolean
   initialFlipped?: boolean
+  flipSpeed?: number
   customShader?: string
   frontContent?: ReactNode
   backContent?: ReactNode
@@ -55,6 +56,7 @@ export const PocaCard = forwardRef<PocaCardHandle, PocaCardProps>(
         backImage: props.backImage,
         flippable: props.flippable,
         initialFlipped: props.initialFlipped,
+        flipSpeed: props.flipSpeed,
         customShader: props.customShader,
       })
 
@@ -81,6 +83,13 @@ export const PocaCard = forwardRef<PocaCardHandle, PocaCardProps>(
         maskImage: props.maskImage,
       })
     }, [props.baseImage, props.popupImage, props.maskImage])
+
+    // Sync flipSpeed
+    useEffect(() => {
+      if (props.flipSpeed != null) {
+        cardRef.current?.updateOptions({ flipSpeed: props.flipSpeed })
+      }
+    }, [props.flipSpeed])
 
     // Sync custom shader
     useEffect(() => {

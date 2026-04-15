@@ -10,6 +10,7 @@ export interface PocaCardOptions {
   backImage?: string
   flippable?: boolean
   initialFlipped?: boolean
+  flipSpeed?: number
   customShader?: string
 }
 
@@ -51,6 +52,10 @@ export class PocaCard extends EventEmitter {
       options.flippable ?? false,
       options.initialFlipped ?? false,
     )
+
+    if (options.flipSpeed != null) {
+      this.interaction.flipSpeed = options.flipSpeed
+    }
   }
 
   getFrontContentEl(): HTMLDivElement {
@@ -90,6 +95,9 @@ export class PocaCard extends EventEmitter {
   }
 
   updateOptions(options: Partial<PocaCardOptions>): void {
+    if (options.flipSpeed != null) {
+      this.interaction.flipSpeed = options.flipSpeed
+    }
     if (options.customShader) {
       this.renderer.updateShader(options.customShader)
     }

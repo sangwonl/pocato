@@ -157,9 +157,12 @@ export function springVec2(
   }, opts)
 
   return {
-    stiffness: opts.stiffness ?? 0.15,
-    damping: opts.damping ?? 0.8,
-    precision: opts.precision ?? 0.01,
+    get stiffness() { return sx.stiffness },
+    set stiffness(v) { sx.stiffness = v; sy.stiffness = v },
+    get damping() { return sx.damping },
+    set damping(v) { sx.damping = v; sy.damping = v },
+    get precision() { return sx.precision },
+    set precision(v) { sx.precision = v; sy.precision = v },
     get() {
       return { x: sx.get(), y: sy.get() }
     },
@@ -207,9 +210,12 @@ export function springVec3(
   }, opts)
 
   return {
-    stiffness: opts.stiffness ?? 0.15,
-    damping: opts.damping ?? 0.8,
-    precision: opts.precision ?? 0.01,
+    get stiffness() { return sx.stiffness },
+    set stiffness(v) { sx.stiffness = v; sy.stiffness = v; so.stiffness = v },
+    get damping() { return sx.damping },
+    set damping(v) { sx.damping = v; sy.damping = v; so.damping = v },
+    get precision() { return sx.precision },
+    set precision(v) { sx.precision = v; sy.precision = v; so.precision = v },
     get() {
       return { x: sx.get(), y: sy.get(), o: so.get() }
     },
