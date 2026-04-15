@@ -172,7 +172,11 @@ export class Renderer {
     this.webglRenderer.setPixelRatio(window.devicePixelRatio)
     this.webglRenderer.setSize(width, height)
 
-    const uniforms = this.createUniforms(width, height)
+    // Use actual pixel dimensions (CSS size × DPR) for uResolution,
+    // matching Angular which uses renderer.domElement.width/height
+    const pixelWidth = this.canvas.width
+    const pixelHeight = this.canvas.height
+    const uniforms = this.createUniforms(pixelWidth, pixelHeight)
 
     const rawFragmentShader = this.options.customShader
       ?? FRAG_SHADERS[this.options.type]
@@ -249,8 +253,9 @@ export class Renderer {
       if (width === 0 || height === 0) return
 
       this.webglRenderer?.setSize(width, height)
+      // Use pixel dimensions after setSize (accounts for DPR)
       if (this.material) {
-        this.material.uniforms.uResolution.value.set(width, height)
+        this.material.uniforms.uResolution.value.set(this.canvas.width, this.canvas.height)
       }
     })
     this.resizeObserver.observe(this.container)
