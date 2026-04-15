@@ -42,7 +42,7 @@ export class PocaCard extends EventEmitter {
       this.renderer.getRotatorEl(),
       {
         onRotate: (rotate) => this.renderer.updateUniforms({ rotate }),
-        onGlare: (glare) => this.renderer.updateUniforms({ glare }),
+        onGlare: () => {},
         onMousePos: (pos) => this.renderer.updateUniforms({ mouse: pos }),
         onMoveDelta: (delta) => this.renderer.updateUniforms({ move: delta }),
         onDistFromCenter: (_dist) => {
