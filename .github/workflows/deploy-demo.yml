@@ -24,7 +24,7 @@ jobs:
           node-version: 20
       - run: rm -rf node_modules package-lock.json
       - run: npm install
-      - run: npm run build:example
+      - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
           path: packages/example/dist
