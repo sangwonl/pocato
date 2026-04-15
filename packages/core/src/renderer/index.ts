@@ -21,6 +21,7 @@ export interface RendererOptions {
   baseImage: string
   popupImage?: string
   maskImage?: string
+  backImage?: string
   customShader?: string
 }
 
@@ -36,8 +37,10 @@ export class Renderer {
   private canvas: HTMLCanvasElement
   private cardEl: HTMLDivElement
   private rotatorEl: HTMLDivElement
+  private frontEl: HTMLDivElement
+  private backEl: HTMLDivElement
+  private shineEl: HTMLDivElement
   private resizeObserver: ResizeObserver | null = null
-  private styleEl: HTMLStyleElement | null = null
 
   constructor(
     private container: HTMLElement,
@@ -47,17 +50,40 @@ export class Renderer {
   ) {
     this.injectStyles()
 
-    // Build DOM: container > .pocato-card > .pocato-rotator > canvas
+    // Build DOM matching Angular structure:
+    // .pocato-card > .pocato-rotator > .pocato-back
+    //                                > .pocato-front > canvas + .pocato-shine
     this.cardEl = document.createElement('div')
-    this.cardEl.className = 'pocato-card'
+    this.cardEl.className = 'pocato-card pocato-loading'
 
     this.rotatorEl = document.createElement('div')
     this.rotatorEl.className = 'pocato-rotator'
 
+    // Back face
+    this.backEl = document.createElement('div')
+    this.backEl.className = 'pocato-back'
+    if (options.backImage) {
+      const backImg = document.createElement('img')
+      backImg.src = options.backImage
+      backImg.className = 'pocato-back-img'
+      this.backEl.appendChild(backImg)
+    }
+
+    // Front face
+    this.frontEl = document.createElement('div')
+    this.frontEl.className = 'pocato-front'
+
     this.canvas = document.createElement('canvas')
     this.canvas.className = 'pocato-canvas'
 
-    this.rotatorEl.appendChild(this.canvas)
+    this.shineEl = document.createElement('div')
+    this.shineEl.className = 'pocato-shine'
+
+    this.frontEl.appendChild(this.canvas)
+    this.frontEl.appendChild(this.shineEl)
+
+    this.rotatorEl.appendChild(this.backEl)
+    this.rotatorEl.appendChild(this.frontEl)
     this.cardEl.appendChild(this.rotatorEl)
     this.container.appendChild(this.cardEl)
 
@@ -69,38 +95,91 @@ export class Renderer {
     const id = 'pocato-styles'
     if (document.getElementById(id)) return
 
-    this.styleEl = document.createElement('style')
-    this.styleEl.id = id
-    this.styleEl.textContent = `
+    const style = document.createElement('style')
+    style.id = id
+    style.textContent = `
       .pocato-card {
         width: 100%;
         height: 100%;
         perspective: 1000px;
         touch-action: none;
         user-select: none;
+        transform: translate3d(0,0,0);
+        opacity: 0;
+        transition: opacity 0.5s ease;
+      }
+      .pocato-card.pocato-ready {
+        opacity: 1;
       }
       .pocato-rotator {
         width: 100%;
         height: 100%;
+        position: relative;
         transform-style: preserve-3d;
         transform-origin: center;
         transform: rotateY(var(--pocato-rotate-x, 0deg)) rotateX(var(--pocato-rotate-y, 0deg));
         border-radius: 2%;
-        overflow: hidden;
         will-change: transform, box-shadow;
         transition: box-shadow 0.4s ease;
         box-shadow:
           0px 10px 20px -5px rgba(0,0,0,0.4),
           0 2px 15px -5px rgba(0,0,0,0.3);
+        pointer-events: auto;
+      }
+      .pocato-front {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%;
+        height: 100%;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        transform: translate3d(0,0,0);
+        border-radius: 2%;
+        overflow: hidden;
+      }
+      .pocato-back {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%;
+        height: 100%;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        transform: rotateY(180deg) translateZ(0);
+        border-radius: 2%;
+        overflow: hidden;
+        background-color: #1a1a2e;
+      }
+      .pocato-back-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        pointer-events: none;
       }
       .pocato-canvas {
         width: 100%;
         height: 100%;
         display: block;
+      }
+      .pocato-shine {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%;
+        height: 100%;
+        transform: translateZ(1px);
+        filter: brightness(0.85) contrast(2.75) saturate(0.65);
+        mix-blend-mode: color-dodge;
+        opacity: var(--pocato-shine-opacity, 0);
+        pointer-events: none;
         border-radius: 2%;
+        background: radial-gradient(
+          farthest-corner circle at var(--pocato-pointer-x, 50%) var(--pocato-pointer-y, 50%),
+          hsla(0, 0%, 100%, 0.8) 10%,
+          hsla(0, 0%, 100%, 0.65) 20%,
+          hsla(0, 0%, 0%, 0.5) 90%
+        );
       }
     `
-    document.head.appendChild(this.styleEl)
+    document.head.appendChild(style)
   }
 
   private init(): void {
@@ -121,7 +200,6 @@ export class Renderer {
     const rawFragmentShader = this.options.customShader
       ?? FRAG_SHADERS[this.options.type]
 
-    // Resolve all #include directives before passing to Three.js
     const fragmentShader = resolveIncludes(rawFragmentShader)
 
     this.material = new THREE.ShaderMaterial({
@@ -138,6 +216,12 @@ export class Renderer {
     this.loadTextures()
     this.setupResizeObserver()
     this.startRenderLoop()
+
+    // Fade in after a short delay (matching Angular loading behavior)
+    requestAnimationFrame(() => {
+      this.cardEl.classList.remove('pocato-loading')
+      this.cardEl.classList.add('pocato-ready')
+    })
   }
 
   private createUniforms(width: number, height: number): Record<string, THREE.IUniform> {
@@ -211,6 +295,7 @@ export class Renderer {
     rotate?: { x: number; y: number }
     mouse?: { x: number; y: number }
     move?: { x: number; y: number }
+    glare?: { x: number; y: number; o: number }
     opacity?: number
   }): void {
     if (!this.material) return
@@ -224,6 +309,12 @@ export class Renderer {
         updates.rotate.x * (Math.PI / 180),
         updates.rotate.y * (Math.PI / 180),
       )
+    }
+    if (updates.glare) {
+      // Shine overlay: opacity + pointer position
+      this.cardEl.style.setProperty('--pocato-shine-opacity', `${updates.glare.o}`)
+      this.cardEl.style.setProperty('--pocato-pointer-x', `${updates.glare.x}%`)
+      this.cardEl.style.setProperty('--pocato-pointer-y', `${updates.glare.y}%`)
     }
     if (updates.mouse) u.uMouse.value.set(updates.mouse.x, updates.mouse.y)
     if (updates.move) u.uMove.value.set(updates.move.x, updates.move.y)
@@ -256,7 +347,6 @@ export class Renderer {
     return this.container.getBoundingClientRect()
   }
 
-  /** Returns the rotator element (used for pointer event binding) */
   getRotatorEl(): HTMLDivElement {
     return this.rotatorEl
   }

@@ -32,15 +32,16 @@ export class InteractionHandler {
   private springGlare: Spring<{ x: number; y: number; o: number }>
 
   private lastThrottleTime = 0
-  private lastClickTime = 0
   private clickCount = 0
   private dblClickTimer: ReturnType<typeof setTimeout> | null = null
+  private activePointerId: number | null = null
 
   // Bound event handlers for cleanup
   private boundPointerDown: (e: PointerEvent) => void
   private boundPointerMove: (e: PointerEvent) => void
   private boundPointerUp: (e: PointerEvent) => void
   private boundClick: (e: MouseEvent) => void
+  private boundTouchHandler: (e: TouchEvent) => void
 
   constructor(
     private container: HTMLElement,
@@ -51,7 +52,11 @@ export class InteractionHandler {
     this.flipped = initialFlipped
 
     this.springRotate = springVec2({ x: 0, y: 0 }, (v) => {
-      callbacks.onRotate(v)
+      // Account for flip state: mirror rotation when flipped
+      const rotateForCSS = this.flipped
+        ? { x: 180 - v.x, y: -v.y }
+        : { x: -v.x, y: v.y }
+      callbacks.onRotate(rotateForCSS)
       callbacks.onDistFromCenter(clamp(distance(v.x, v.y, 0, 0) / 50, 0, 1))
     }, SPRING_INTERACT)
 
@@ -64,12 +69,16 @@ export class InteractionHandler {
     this.boundPointerMove = this.onPointerMove.bind(this)
     this.boundPointerUp = this.onPointerUp.bind(this)
     this.boundClick = this.onClick.bind(this)
+    this.boundTouchHandler = (e: TouchEvent) => { e.stopPropagation() }
 
     this.container.addEventListener('pointerdown', this.boundPointerDown)
     this.container.addEventListener('pointermove', this.boundPointerMove)
     this.container.addEventListener('pointerup', this.boundPointerUp)
-    this.container.addEventListener('pointerleave', this.boundPointerUp)
+    this.container.addEventListener('pointercancel', this.boundPointerUp)
     this.container.addEventListener('click', this.boundClick)
+    // Prevent parent scroll interference on mobile
+    this.container.addEventListener('touchstart', this.boundTouchHandler, { passive: true })
+    this.container.addEventListener('touchmove', this.boundTouchHandler, { passive: true })
   }
 
   updateRect(rect: Rect): void {
@@ -78,7 +87,13 @@ export class InteractionHandler {
 
   private onPointerDown(e: PointerEvent): void {
     e.preventDefault()
+    e.stopPropagation()
     this.interacting = true
+    this.activePointerId = e.pointerId
+
+    // Capture pointer so events continue even when pointer leaves the element
+    this.container.setPointerCapture(e.pointerId)
+
     const rect = this.container.getBoundingClientRect()
     this.boundingRect = { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
     this.interactionOrigin = { x: e.clientX, y: e.clientY }
@@ -93,9 +108,16 @@ export class InteractionHandler {
     this.doInteract(e.clientX, e.clientY)
   }
 
-  private onPointerUp(_e: PointerEvent): void {
+  private onPointerUp(e: PointerEvent): void {
     if (!this.interacting) return
     this.interacting = false
+
+    // Release pointer capture
+    if (this.activePointerId !== null) {
+      try { this.container.releasePointerCapture(this.activePointerId) } catch {}
+      this.activePointerId = null
+    }
+
     this.endInteract()
   }
 
@@ -203,11 +225,16 @@ export class InteractionHandler {
   }
 
   destroy(): void {
+    if (this.activePointerId !== null) {
+      try { this.container.releasePointerCapture(this.activePointerId) } catch {}
+    }
     this.container.removeEventListener('pointerdown', this.boundPointerDown)
     this.container.removeEventListener('pointermove', this.boundPointerMove)
     this.container.removeEventListener('pointerup', this.boundPointerUp)
-    this.container.removeEventListener('pointerleave', this.boundPointerUp)
+    this.container.removeEventListener('pointercancel', this.boundPointerUp)
     this.container.removeEventListener('click', this.boundClick)
+    this.container.removeEventListener('touchstart', this.boundTouchHandler)
+    this.container.removeEventListener('touchmove', this.boundTouchHandler)
     if (this.dblClickTimer) clearTimeout(this.dblClickTimer)
   }
 }

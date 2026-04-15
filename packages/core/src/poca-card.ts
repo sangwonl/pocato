@@ -30,6 +30,7 @@ export class PocaCard extends EventEmitter {
         baseImage: options.baseImage,
         popupImage: options.popupImage,
         maskImage: options.maskImage,
+        backImage: options.backImage,
         customShader: options.customShader,
       },
       (error) => this.emit('error', error),
@@ -41,9 +42,7 @@ export class PocaCard extends EventEmitter {
       this.renderer.getRotatorEl(),
       {
         onRotate: (rotate) => this.renderer.updateUniforms({ rotate }),
-        onGlare: (_glare) => {
-          // Glare is handled via shader uniforms (mouse/move), not a separate uniform
-        },
+        onGlare: (glare) => this.renderer.updateUniforms({ glare }),
         onMousePos: (pos) => this.renderer.updateUniforms({ mouse: pos }),
         onMoveDelta: (delta) => this.renderer.updateUniforms({ move: delta }),
         onDistFromCenter: (_dist) => {
