@@ -1,0 +1,11 @@
+{
+  "name": "pocato",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w packages/core && npm run build -w packages/react",
+    "dev": "npm run dev -w packages/example"
+  }
+}
