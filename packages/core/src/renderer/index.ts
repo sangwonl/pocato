@@ -39,6 +39,8 @@ export class Renderer {
   private rotatorEl: HTMLDivElement
   private frontEl: HTMLDivElement
   private backEl: HTMLDivElement
+  private frontContentEl: HTMLDivElement
+  private backContentEl: HTMLDivElement
   private resizeObserver: ResizeObserver | null = null
 
   constructor(
@@ -75,7 +77,16 @@ export class Renderer {
     this.canvas = document.createElement('canvas')
     this.canvas.className = 'pocato-canvas'
 
+    // Content containers for user-provided children (via React portal etc.)
+    this.frontContentEl = document.createElement('div')
+    this.frontContentEl.className = 'pocato-content pocato-front-content'
+
+    this.backContentEl = document.createElement('div')
+    this.backContentEl.className = 'pocato-content pocato-back-content'
+
     this.frontEl.appendChild(this.canvas)
+    this.frontEl.appendChild(this.frontContentEl)
+    this.backEl.appendChild(this.backContentEl)
 
     this.rotatorEl.appendChild(this.backEl)
     this.rotatorEl.appendChild(this.frontEl)
@@ -154,6 +165,17 @@ export class Renderer {
         width: 100%;
         height: 100%;
         display: block;
+      }
+      .pocato-content {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 1;
+      }
+      .pocato-content > * {
+        pointer-events: auto;
       }
     `
     document.head.appendChild(style)
@@ -324,6 +346,14 @@ export class Renderer {
 
   getRotatorEl(): HTMLDivElement {
     return this.rotatorEl
+  }
+
+  getFrontContentEl(): HTMLDivElement {
+    return this.frontContentEl
+  }
+
+  getBackContentEl(): HTMLDivElement {
+    return this.backContentEl
   }
 
   destroy(): void {

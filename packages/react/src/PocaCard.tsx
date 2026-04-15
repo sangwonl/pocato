@@ -3,8 +3,11 @@ import {
   useEffect,
   useImperativeHandle,
   useRef,
+  useState,
   type CSSProperties,
+  type ReactNode,
 } from 'react'
+import { createPortal } from 'react-dom'
 import { PocaCard as CorePocaCard, type PocaCardOptions } from '@pineple/pocato-core'
 
 export interface PocaCardHandle {
@@ -22,6 +25,8 @@ export interface PocaCardProps {
   flippable?: boolean
   initialFlipped?: boolean
   customShader?: string
+  children?: ReactNode
+  backContent?: ReactNode
   onFlip?: (flipped: boolean) => void
   onReady?: () => void
   onError?: (error: Error) => void
@@ -33,6 +38,10 @@ export const PocaCard = forwardRef<PocaCardHandle, PocaCardProps>(
   (props, ref) => {
     const containerRef = useRef<HTMLDivElement>(null)
     const cardRef = useRef<CorePocaCard | null>(null)
+    const [portalTargets, setPortalTargets] = useState<{
+      front: HTMLElement | null
+      back: HTMLElement | null
+    }>({ front: null, back: null })
 
     // Create/destroy core instance
     useEffect(() => {
@@ -50,10 +59,15 @@ export const PocaCard = forwardRef<PocaCardHandle, PocaCardProps>(
       })
 
       cardRef.current = card
+      setPortalTargets({
+        front: card.getFrontContentEl(),
+        back: card.getBackContentEl(),
+      })
 
       return () => {
         card.destroy()
         cardRef.current = null
+        setPortalTargets({ front: null, back: null })
       }
     // Re-create only when type changes (major config change)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -107,7 +121,10 @@ export const PocaCard = forwardRef<PocaCardHandle, PocaCardProps>(
         ref={containerRef}
         style={props.style}
         className={props.className}
-      />
+      >
+        {portalTargets.front && props.children && createPortal(props.children, portalTargets.front)}
+        {portalTargets.back && props.backContent && createPortal(props.backContent, portalTargets.back)}
+      </div>
     )
   },
 )

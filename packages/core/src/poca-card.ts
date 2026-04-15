@@ -55,6 +55,14 @@ export class PocaCard extends EventEmitter {
     )
   }
 
+  getFrontContentEl(): HTMLDivElement {
+    return this.renderer.getFrontContentEl()
+  }
+
+  getBackContentEl(): HTMLDivElement {
+    return this.renderer.getBackContentEl()
+  }
+
   flip(): void {
     this.interaction.flip()
   }
