@@ -1,6 +1,7 @@
 {
   "name": "@sangwonl/pocato-react",
   "version": "0.1.0",
+  "author": "Sangwon Lee <gamzabaw@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
