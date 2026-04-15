@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { bootstrapShaders } from './shader-bootstrap'
+import { bootstrapShaders, resolveIncludes } from './shader-bootstrap'
 import vertexShader from '../shaders/common.vert'
 import fragShaderGlare from '../shaders/glare.frag'
 import fragShaderGlare3d from '../shaders/glare-3d.frag'
@@ -67,11 +67,14 @@ export class Renderer {
 
     const uniforms = this.createUniforms(width, height)
 
-    const fragmentShader = this.options.customShader
+    const rawFragmentShader = this.options.customShader
       ?? FRAG_SHADERS[this.options.type]
 
+    // Resolve all #include directives before passing to Three.js
+    const fragmentShader = resolveIncludes(rawFragmentShader)
+
     this.material = new THREE.ShaderMaterial({
-      vertexShader,
+      vertexShader: resolveIncludes(vertexShader),
       fragmentShader,
       uniforms,
       transparent: true,
@@ -173,7 +176,7 @@ export class Renderer {
 
   updateShader(fragmentShader: string): void {
     if (!this.material) return
-    this.material.fragmentShader = fragmentShader
+    this.material.fragmentShader = resolveIncludes(fragmentShader)
     this.material.needsUpdate = true
   }
 

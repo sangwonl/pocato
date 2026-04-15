@@ -12,8 +12,8 @@ function CardDemo({ type }: { type: typeof CARD_TYPES[number] }) {
       <PocaCard
         ref={cardRef}
         type={type}
-        baseImage="/images/sample-base.png"
-        popupImage="/images/sample-popup.png"
+        baseImage="/images/sample-base.webp"
+        popupImage="/images/sample-popup.webp"
         flippable
         onFlip={(f) => console.log(`${type} flipped:`, f)}
         onReady={() => console.log(`${type} ready`)}

@@ -32,6 +32,82 @@ import defaultLighting from '../shaders/utils/default-lighting.glsl'
 
 let bootstrapped = false
 
+// Build a reverse lookup: short name (e.g. "mod289") → full chunk key (e.g. "lygia/math/mod289")
+const shortNameMap = new Map<string, string>()
+
+function buildShortNameMap(): void {
+  const chunks = THREE.ShaderChunk as any
+  for (const key of Object.keys(chunks)) {
+    // Extract short name from full path
+    const parts = key.split('/')
+    const shortName = parts[parts.length - 1]
+    if (!shortNameMap.has(shortName)) {
+      shortNameMap.set(shortName, key)
+    }
+  }
+}
+
+/**
+ * Recursively resolve #include directives using THREE.ShaderChunk.
+ * Handles:
+ *   - #include <lygia/math/mod289>     (angle bracket, full path)
+ *   - #include <utils/defaultLighting>  (angle bracket, registered key)
+ *   - #include "mod289.glsl"           (quote, short name from LYGIA internals)
+ *   - #include "../math/cubic.glsl"    (quote, relative path from LYGIA internals)
+ */
+export function resolveIncludes(source: string): string {
+  if (shortNameMap.size === 0) buildShortNameMap()
+
+  const pattern = /^[ \t]*#include\s+[<"]([^>"]+)[>"]/gm
+  const resolved = new Set<string>() // prevent infinite recursion via guard set
+
+  function resolve(src: string, depth = 0): string {
+    if (depth > 15) return src
+    return src.replace(pattern, (_match, rawName: string) => {
+      // Normalize: strip .glsl extension
+      const name = rawName.replace(/\.glsl$/, '')
+
+      // Prevent re-including the same chunk
+      if (resolved.has(name)) return ''
+
+      const chunks = THREE.ShaderChunk as any
+
+      // 1. Try exact key match
+      let chunk = chunks[name]
+
+      // 2. Try short name lookup (e.g. "mod289" → "lygia/math/mod289")
+      if (chunk === undefined) {
+        const shortName = name.split('/').pop()!
+        const fullKey = shortNameMap.get(shortName)
+        if (fullKey) chunk = chunks[fullKey]
+      }
+
+      // 3. Try normalizing relative paths (e.g. "../math/cubic" → "lygia/math/cubic")
+      if (chunk === undefined && (name.startsWith('../') || name.startsWith('./'))) {
+        // Try stripping relative prefix and prepending lygia/
+        const cleaned = name.replace(/^\.\.\//, '').replace(/^\.\//, '')
+        chunk = chunks['lygia/' + cleaned]
+        if (chunk === undefined) {
+          // Try just the short name
+          const shortName = cleaned.split('/').pop()!
+          const fullKey = shortNameMap.get(shortName)
+          if (fullKey) chunk = chunks[fullKey]
+        }
+      }
+
+      if (chunk !== undefined) {
+        resolved.add(name)
+        return resolve(chunk, depth + 1)
+      }
+
+      // Chunk not found — leave a comment so shader doesn't break silently
+      console.warn(`[pocato] Shader chunk not found: ${rawName}`)
+      return `/* chunk not found: ${rawName} */`
+    })
+  }
+  return resolve(source)
+}
+
 export function bootstrapShaders(): void {
   if (bootstrapped) return
   bootstrapped = true
