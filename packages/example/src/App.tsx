@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { PocaCard, type PocaCardHandle } from '@sangwonl/pocato-react'
 
 const BASE = import.meta.env.BASE_URL
@@ -14,8 +14,16 @@ const CARD_TYPES = [
   'blur-3d'
 ] as const
 
-function CardDemo({ type }: { type: typeof CARD_TYPES[number] }) {
+function CardDemo({ type, index }: { type: typeof CARD_TYPES[number]; index: number }) {
   const cardRef = useRef<PocaCardHandle>(null)
+
+  useEffect(() => {
+    // Stagger wiggle: each card wiggles 1s apart after mount
+    const timer = setTimeout(() => {
+      cardRef.current?.wiggle()
+    }, 1000 * (index + 1))
+    return () => clearTimeout(timer)
+  }, [index])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
@@ -44,8 +52,8 @@ export function App() {
     <div style={{ padding: 32 }}>
       <h1>Pocato Card Gallery</h1>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 32, marginTop: 24 }}>
-        {CARD_TYPES.map((type) => (
-          <CardDemo key={type} type={type} />
+        {CARD_TYPES.map((type, i) => (
+          <CardDemo key={type} type={type} index={i} />
         ))}
       </div>
     </div>
