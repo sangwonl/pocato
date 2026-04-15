@@ -25,7 +25,7 @@ export interface PocaCardProps {
   flippable?: boolean
   initialFlipped?: boolean
   customShader?: string
-  children?: ReactNode
+  frontContent?: ReactNode
   backContent?: ReactNode
   onFlip?: (flipped: boolean) => void
   onReady?: () => void
@@ -122,7 +122,7 @@ export const PocaCard = forwardRef<PocaCardHandle, PocaCardProps>(
         style={props.style}
         className={props.className}
       >
-        {portalTargets.front && props.children && createPortal(props.children, portalTargets.front)}
+        {portalTargets.front && props.frontContent && createPortal(props.frontContent, portalTargets.front)}
         {portalTargets.back && props.backContent && createPortal(props.backContent, portalTargets.back)}
       </div>
     )

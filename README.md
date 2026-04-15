@@ -49,10 +49,9 @@ function App() {
         popupImage="/images/card-popup.png"
         flippable
         onFlip={(flipped) => console.log('flipped:', flipped)}
-      >
-        {/* Optional: overlay content on front face */}
-        <div style={{ padding: 12 }}>My Card</div>
-      </PocaCard>
+        frontContent={<div style={{ padding: 12 }}>My Card</div>}
+        backContent={<div style={{ padding: 12 }}>Back Side</div>}
+      />
 
       <button onClick={() => cardRef.current?.flip()}>Flip</button>
       <button onClick={() => cardRef.current?.wiggle()}>Wiggle</button>
@@ -111,7 +110,7 @@ card.destroy()
 | `flippable` | `boolean` | Enable double-click flip |
 | `initialFlipped` | `boolean` | Start flipped |
 | `customShader` | `string` | Custom GLSL fragment shader |
-| `children` | `ReactNode` | Front face overlay content |
+| `frontContent` | `ReactNode` | Front face overlay content |
 | `backContent` | `ReactNode` | Back face overlay content |
 | `onFlip` | `(flipped: boolean) => void` | Flip event |
 | `onReady` | `() => void` | Card ready event |
