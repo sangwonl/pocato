@@ -220,7 +220,11 @@ export class InteractionHandler {
     this.flipped = flipped ?? !this.flipped
     this.springRotate.stiffness = SPRING_FLIP.stiffness
     this.springRotate.damping = SPRING_FLIP.damping
-    this.springRotate.set({ x: this.flipped ? 180 : 0, y: 0 })
+    this.springRotate.set({ x: this.flipped ? 180 : 0, y: 0 }).then(() => {
+      // Restore interaction spring params after flip animation settles
+      this.springRotate.stiffness = SPRING_INTERACT.stiffness
+      this.springRotate.damping = SPRING_INTERACT.damping
+    })
     this.callbacks.onFlip(this.flipped)
     return this.flipped
   }
