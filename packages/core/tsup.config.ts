@@ -6,4 +6,9 @@ export default defineConfig({
   dts: true,
   sourcemap: true,
   clean: true,
+  loader: {
+    '.glsl': 'text',
+    '.vert': 'text',
+    '.frag': 'text',
+  },
 })
