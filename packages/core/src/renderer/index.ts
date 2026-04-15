@@ -9,6 +9,8 @@ import fragShaderBrush from '../shaders/brush.frag'
 import fragShaderBrush3d from '../shaders/brush-3d.frag'
 import fragShaderBlur from '../shaders/blur.frag'
 import fragShaderBlur3d from '../shaders/blur-3d.frag'
+import fragShaderHolo from '../shaders/holo.frag'
+import fragShaderHolo3d from '../shaders/holo-3d.frag'
 
 const FRAG_SHADERS: Record<string, string> = {
   'glare': fragShaderGlare,
@@ -19,6 +21,8 @@ const FRAG_SHADERS: Record<string, string> = {
   'brush-3d': fragShaderBrush3d,
   'blur': fragShaderBlur,
   'blur-3d': fragShaderBlur3d,
+  'holo': fragShaderHolo,
+  'holo-3d': fragShaderHolo3d,
 }
 
 export interface RendererOptions {
