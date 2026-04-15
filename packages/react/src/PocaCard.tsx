@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { PocaCard as CorePocaCard, type PocaCardOptions } from '@pineple/pocato-core'
+import { PocaCard as CorePocaCard, type PocaCardOptions } from '@sangwonl/pocato-core'
 
 export interface PocaCardHandle {
   flip(): void

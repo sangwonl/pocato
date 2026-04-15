@@ -1,6 +1,14 @@
 {
-  "name": "@pineple/pocato-core",
+  "name": "@sangwonl/pocato-core",
   "version": "0.1.0",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sangwonl/pocato"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

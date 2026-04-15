@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { PocaCard, type PocaCardHandle } from '@pineple/pocato-react'
+import { PocaCard, type PocaCardHandle } from '@sangwonl/pocato-react'
 
 const CARD_TYPES = [
   'glare',

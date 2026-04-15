@@ -7,7 +7,7 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@pineple/pocato-react": "0.1.0",
+    "@sangwonl/pocato-react": "0.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
