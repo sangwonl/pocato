@@ -6,6 +6,7 @@
   ],
   "scripts": {
     "build": "npm run build -w packages/core && npm run build -w packages/react",
+    "build:example": "npm run build && npm run build -w packages/example",
     "dev": "npm run dev -w packages/example"
   }
 }
