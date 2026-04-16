@@ -4,7 +4,7 @@ Interactive trading card UI library with WebGL shader effects and 3D tilt intera
 
 **[Live Demo](https://sangwonl.github.io/pocato/)**
 
-https://github.com/user-attachments/assets/352f00ee-4ea7-4a81-a6a7-73e407dbbf5b
+https://github.com/user-attachments/assets/f9b0211c-4253-40a3-945a-4da7079bd965
 
 ## Features
 
